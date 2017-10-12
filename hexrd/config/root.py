@@ -9,7 +9,7 @@ from .config import Config
 from .instrument import InstrumentConfig
 from .findorientations import FindOrientationsConfig
 from .fitgrains import FitGrainsConfig
-from .imageseries import ImageSeriesConfig
+from .imageseries import ImageSeries
 from .material import MaterialConfig
 from .utils import null
 
@@ -53,8 +53,8 @@ class RootConfig(Config):
 
 
     @property
-    def image_series(self):
-        return ImageSeriesConfig(self)
+    def imageseries(self):
+        return ImageSeries(self)
 
 
     @property
