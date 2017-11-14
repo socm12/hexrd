@@ -2,6 +2,8 @@
 
 import logging
 
+from .utils import null
+
 logger = logging.getLogger('hexrd.config')
 
 class Config(object):

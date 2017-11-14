@@ -4,14 +4,13 @@ import multiprocessing as mp
 import sys
 
 from hexrd.utils.decorators import memoized
+from hexrd import imageseries
 
 from .config import Config
 #from .instrument import InstrumentConfig
 from .findorientations import FindOrientationsConfig
 from .fitgrains import FitGrainsConfig
-from .imageseries import ImageSeries
 from .material import MaterialConfig
-from .utils import null
 
 logger = logging.getLogger('hexrd.config')
 
@@ -126,7 +125,7 @@ class RootConfig(Config):
     @property
     def imageseries(self):
         """return the imageseries dictionary"""
-        if self._image_dict is None:
+        if not hasattr(self, '_image_dict'):
             self._image_dict = dict()
             fmt = self.get('imageseries:format')
             imsdata = self.get('imageseries:data')
