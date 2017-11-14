@@ -38,10 +38,6 @@ class RootConfig(Config):
         return FitGrainsConfig(self)
 
     @property
-    def imageseries(self):
-        return ImageSeries(self)
-
-    @property
     def instrument(self):
         return InstrumentConfig(self)
 
@@ -126,3 +122,20 @@ class RootConfig(Config):
         if not os.path.isdir(val):
             raise IOError('"working_dir": "%s" does not exist' % val)
         self.set('working_dir', val)
+
+    @property
+    def imageseries(self):
+        """return the imageseries dictionary"""
+        if self._image_dict is None:
+            self._image_dict = dict()
+            fmt = self.get('imageseries:format')
+            imsdata = self.get('imageseries:data')
+            for ispec in imsdata:
+                fname = ispec['file']
+                args = ispec['args']
+                ims = imageseries.open(fname, fmt, **args)
+                oms = imageseries.omega.OmegaImageSeries(ims)
+                panel = ims.metadata['panel']
+                self._image_dict[panel] = ims
+
+        return self._image_dict
