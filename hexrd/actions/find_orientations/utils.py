@@ -31,12 +31,9 @@ from hexrd.xrd import rotations as rot
 print (__name__)
 logger = logging.getLogger(__name__)
 
-# ==================== Hardwired options
-# maps options
-clobber_maps = False
-show_maps = False
 
 # ==================== Functions
+
 
 def analysis_id(cfg):
     return '%s_%s' % (
@@ -45,11 +42,11 @@ def analysis_id(cfg):
     )
 
 
-def get_eta_ome(cfg):
+def get_eta_ome(cfg, clean=False):
     """Return eta-omega maps"""
     # Use existing ones if available
     maps_fname = analysis_id(cfg) + "_maps.npz"
-    if os.path.exists(maps_fname) and not clobber_maps:
+    if os.path.exists(maps_fname) and not clean:
         print("INFO: loading existing eta_ome maps")
         eta_ome = EtaOmeMaps(maps_fname)
         return eta_ome
@@ -65,6 +62,12 @@ def get_eta_ome(cfg):
     build_map_threshold = cfg.find_orientations.orientation_maps.threshold
     ome_period = np.radians(cfg.find_orientations.omega.period)
 
+    # trim plane_data to only use active hkls
+    if active_hkls is not None:
+        excl = np.ones_like(plane_data.exclusions, dtype=bool)
+        excl[active_hkls] = False
+        plane_data.exclusions = excl
+        
     eta_ome = instrument.GenerateEtaOmeMaps(
         imsd, instr, plane_data,
         active_hkls=active_hkls,

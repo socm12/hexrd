@@ -4,6 +4,8 @@ import numpy as np
 
 from hexrd import constants
 from hexrd import instrument
+from hexrd.xrd.distortion import GE_41RT as dfunc  # !!! UGH, FIXME !!!
+
 from .config import Config
 
 
@@ -42,15 +44,16 @@ class Instrument(Config):
 
         rows = dcfg.get('pixels:rows', default=Detector.nrows_DFLT)
         cols = dcfg.get('pixels:columns', default=Detector.ncols_DFLT)
-        pixel_size = dcfg.get('pixels:pixel_size', default=Detector.pixel_size_DFLT)
+        pixel_size = dcfg.get('pixels:size', default=Detector.pixel_size_DFLT)
         tvec = dcfg.get('transform:t_vec_d', default=Detector.t_vec_d_DFLT)
         tilt = dcfg.get('transform:tilt_angles', default=Detector.tilt_angles_DFLT)
         bvec = self.beam.vector
         evec = self._cfg.get('eta_vec', default=constants.eta_vec)
 
         # Distortion
+        # FIXME: DISTORTION KLUDGE
         dparams = dcfg.get('distortion:parameters', default=None)
-        distortion = (None, dparams) if dparams is not None else None
+        distortion = (dfunc, dparams) if dparams is not None else None
 
         d = instrument.PlanarDetector(
             rows=rows, cols=cols, pixel_size=pixel_size, tvec=tvec, tilt=tilt,

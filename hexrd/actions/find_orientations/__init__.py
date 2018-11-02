@@ -8,6 +8,8 @@ import timeit
 
 from hexrd import constants as cnst
 from hexrd import instrument
+from hexrd import matrixutil as mutil
+from hexrd.imageseries.omega import OmegaImageSeries
 from hexrd.xrd import indexer
 from hexrd.xrd import transforms_CAPI as xfcapi
 from .utils import get_eta_ome, generate_orientation_fibers, run_cluster
@@ -26,6 +28,7 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     ncpus = cfg.multiprocessing
 
     # for indexing
+    active_hkls = cfg.find_orientations.orientation_maps.active_hkls 
     fiber_ndiv = cfg.find_orientations.seed_search.fiber_ndiv
     fiber_seeds = cfg.find_orientations.seed_search.hkl_seeds
     on_map_threshold = cfg.find_orientations.threshold
@@ -38,7 +41,7 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     print("INFO:\tgenerating search quaternion list using %d processes" % ncpus)
     start = timeit.default_timer()
 
-    eta_ome = get_eta_ome(cfg)
+    eta_ome = get_eta_ome(cfg, clean=clean)
     qfib = generate_orientation_fibers(
         eta_ome, hedm.chi, on_map_threshold,
         fiber_seeds, fiber_ndiv,
@@ -88,9 +91,17 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     ##########################################################
     ##   Simulate N random grains to get neighborhood size  ##
     ##########################################################
+    print("INFO:\trunning %d simulations to determine neighborhood size"
+          % nsim
+    )
     seed_hkl_ids = [
         plane_data.hklDataList[active_hkls[i]]['hklID'] for i in fiber_seeds
     ]
+    
+    # need ome_ranges from imageseries
+    # CAVEAT: assumes that all imageseries have same omega ranges!!!
+    oims = OmegaImageSeries(cfg.image_series.itervalues().next())
+    ome_ranges = [(np.radians([i['ostart'], i['ostop']])) for i in oims.omegawedges.wedges]
     
     if seed_hkl_ids is not None:
         rand_q = mutil.unitVector(np.random.randn(4, nsim))
@@ -100,8 +111,8 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
         num_seed_refls = np.zeros(nsim)
         grain_param_list = np.vstack([rand_e, 
                                       np.zeros((3, nsim)),
-                                      np.tile(const.identity_6x1, (nsim, 1)).T]).T
-        sim_results = instr.simulate_rotation_series(
+                                      np.tile(cnst.identity_6x1, (nsim, 1)).T]).T
+        sim_results = hedm.simulate_rotation_series(
                 plane_data, grain_param_list, 
                 eta_ranges=np.radians(cfg.find_orientations.eta.range),
                 ome_ranges=ome_ranges,
