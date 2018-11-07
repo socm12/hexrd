@@ -36,30 +36,22 @@ import os
 
 import yaml
 
-import h5py
-
 import numpy as np
 
 from scipy import ndimage
-from scipy.linalg.matfuncs import logm
+
+from . import beam as beam_module
+from . import io
 
 from hexrd.gridutil import make_tolerance_grid
 from hexrd.xrd.transforms_CAPI import anglesToGVec, \
-                                      detectorXYToGvec, \
                                       gvecToDetectorXY, \
-                                      makeDetectorRotMat, \
                                       makeOscillRotMat, \
                                       makeRotMatOfExpMap, \
                                       mapAngle, \
-                                      oscillAnglesOfHKLs, \
-                                      rowNorm, \
                                       validateAngleRanges
 from hexrd.xrd import xrdutil
 from hexrd import constants as ct
-
-# FIXME: distortion kludge
-from hexrd.xrd.distortion import GE_41RT  # BAD, VERY BAD!!!
-
 
 from skimage.draw import polygon
 
@@ -126,6 +118,7 @@ def centers_of_edge_vec(edges):
 
 class HEDMInstrument(object):
     """
+    !!!
     * Distortion needs to be moved to a class with registry; tuple unworkable
     * where should reference eta be defined? currently set to default config
     """
@@ -200,6 +193,21 @@ class HEDMInstrument(object):
 
     # Miscellaneous parameters
     @property
+    def max_tth(self, units='degrees'):
+        """
+        FIXME
+        """
+        max_tth = []
+        for panel in self.detectors.itervalues():
+            tth, eta = panel.pixel_angles()
+            max_tth.append(tth)
+        if units == 'radians':
+            max_tth = np.radians(max_tth)
+        else:
+            raise RuntimeError("unknown units kwarg")
+        return min(max_tth)
+
+    @property
     def eta_vector(self):
         return self._eta_vector
 
@@ -250,7 +258,7 @@ class HEDMInstrument(object):
 
         par_dict = {}
 
-        azim, pola = calc_angles_from_beam_vec(self.beam_vector)
+        azim, pola = beam_module.calc_angles_from_beam_vec(self.beam_vector)
         beam = dict(
             energy=self.beam_energy,
             vector=dict(
@@ -384,7 +392,7 @@ class HEDMInstrument(object):
             tth_ranges = np.degrees(plane_data.getMergedRanges()[1])
             tth_tols = np.vstack([i[1] - i[0] for i in tth_ranges])
         else:
-            tth_tols=np.ones(len(plane_data))*tth_tol
+            tth_tols = np.ones(len(plane_data))*tth_tol
 
         # =====================================================================
         # LOOP OVER DETECTORS
@@ -408,7 +416,10 @@ class HEDMInstrument(object):
 
             # make rings
             pow_angs, pow_xys = panel.make_powder_rings(
-                plane_data, merge_hkls=True, delta_tth=tth_tol, delta_eta=eta_tol)
+                plane_data,
+                merge_hkls=True,
+                delta_tth=tth_tol,
+                delta_eta=eta_tol)
 
             # =================================================================
             # LOOP OVER RING SETS
@@ -578,7 +589,7 @@ class HEDMInstrument(object):
         # prepare output if requested
         if filename is not None and output_format.lower() == 'hdf5':
             this_filename = os.path.join(dirname, filename)
-            writer = GrainDataWriter_h5(
+            writer = io.GrainDataWriter_h5(
                 os.path.join(dirname, filename),
                 self.write_config(), grain_params)
 
@@ -599,7 +610,7 @@ class HEDMInstrument(object):
                 this_filename = os.path.join(
                     output_dir, filename
                 )
-                writer = PatchDataWriter(this_filename)
+                writer = io.PatchDataWriter(this_filename)
 
             # grab panel
             panel = self.detectors[detector_id]

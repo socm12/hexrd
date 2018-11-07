@@ -1,30 +1,25 @@
-import collections
-import copy
 import logging
 import os
-import sys
-import time
 
-import shelve, cPickle
 import numpy as np
 
-from scipy.optimize import leastsq
 from scipy.linalg import solve
 
 import yaml
 
 from hexrd.xrd import experiment as expt
 from hexrd.xrd.transforms import makeDetectorRotMat, unitVector, vInv_ref
-from hexrd.xrd import transforms_CAPI as xfcapi
 from hexrd.xrd import distortion as dFuncs
 
 from hexrd.xrd.detector import ReadGE
 
 logger = logging.getLogger('hexrd')
 
-
-# #################################################
+# =============================================================================
 # LEGACY FUCTIONS FOR WORKING WITH OLD HEXRD PAR
+# =============================================================================
+
+
 def tVec_d_from_old_detector_params(old_par, det_origin):
     """
     calculate tVec_d from old [xc, yc, D] parameter spec
@@ -33,13 +28,14 @@ def tVec_d_from_old_detector_params(old_par, det_origin):
     """
     rMat_d = makeDetectorRotMat(old_par[3:6, 0])
     #
-    P2_d   = np.c_[ old_par[0, 0] - det_origin[0],
-                    old_par[1, 0] - det_origin[1],
-                    0.].T
-    P2_l   = np.c_[ 0.,
-                    0.,
-                   -old_par[2, 0]].T
+    P2_d = np.c_[old_par[0, 0] - det_origin[0],
+                 old_par[1, 0] - det_origin[1],
+                 0.].T
+    P2_l = np.c_[0.,
+                 0.,
+                 -old_par[2, 0]].T
     return P2_l - np.dot(rMat_d, P2_d)
+
 
 def old_detector_params_from_new(new_par, det_origin):
     """
@@ -50,25 +46,26 @@ def old_detector_params_from_new(new_par, det_origin):
     rMat_d = makeDetectorRotMat(new_par[:3])
     tVec_d = new_par[3:6].reshape(3, 1)
 
-    A = np.eye(3); A[:, :2] = rMat_d[:, :2]
+    A = np.eye(3)
+    A[:, :2] = rMat_d[:, :2]
 
     return solve(A, -tVec_d) + np.vstack([det_origin[0], det_origin[1], 0])
 
-def make_old_detector_parfile(
-    results, det_origin=(204.8, 204.8), filename=None
-    ):
+
+def make_old_detector_parfile(results,
+                              det_origin=(204.8, 204.8),
+                              filename=None):
     tiltAngles = np.array(results['tiltAngles'])
-    rMat_d     = makeDetectorRotMat(tiltAngles)
-    tVec_d     = results['tVec_d'] - results['tVec_s']
+    tVec_d = results['tVec_d'] - results['tVec_s']
 
     beamXYD = old_detector_params_from_new(
         np.hstack([tiltAngles.flatten(), tVec_d.flatten()]), det_origin
         )
 
     det_plist = np.zeros(12)
-    det_plist[:3]  = beamXYD.flatten()
+    det_plist[:3] = beamXYD.flatten()
     det_plist[3:6] = tiltAngles
-    det_plist[6:]  = results['dParams']
+    det_plist[6:] = results['dParams']
     if filename is not None:
         if isinstance(filename, file):
             fid = filename
@@ -81,10 +78,11 @@ def make_old_detector_parfile(
         fid.close()
     return det_plist
 
+
 def migrate_detector_to_instrument_config(
-    old_par, nrows, ncols, pixel_size, detID='GE', chi=0., tVec_s=np.zeros(3),
-    saturation_level=2**14-1800, filename=None
-    ):
+        old_par, nrows, ncols, pixel_size,
+        detID='GE', chi=0., tVec_s=np.zeros(3),
+        saturation_level=2**14-1800, filename=None):
     """
     takes old ge detector parfile from hexrd and converts to the new 10
     parameter spec.
@@ -121,9 +119,10 @@ def migrate_detector_to_instrument_config(
         fid.close()
     return detector_params
 
+
 def make_grain_params(quat, tVec_c=np.zeros(3), vInv=vInv_ref, filename=None):
-    phi      = 2*np.arccos(quat[0])
-    n        = unitVector(quat[1:, :])
+    phi = 2*np.arccos(quat[0])
+    n = unitVector(quat[1:, :])
     expMap_c = phi*n
     if filename is not None:
         if isinstance(filename, file):
@@ -145,9 +144,11 @@ def make_grain_params(quat, tVec_c=np.zeros(3), vInv=vInv_ref, filename=None):
             "%1.7e\t# vInv_s[5]  \n" % (vInv[5])
         fid.close()
     return np.hstack([expMap_c.flatten(), tVec_c.flatten(), vInv.flatten()])
-# #################################################
 
-# #################################################
+
+# =============================================================================
+#
+# =============================================================================
 
 
 def initialize_experiment(cfg):
@@ -179,10 +180,12 @@ def initialize_experiment(cfg):
         ws.loadDetector(os.path.join(cwd, detector_fname))
         detector = ws.detector
     except IOError:
-        logger.info("old detector par file not found, skipping; \nalthough you may need this for find-orientations")
+        logger.info("old detector par file not found, skipping; "
+                    + "\nalthough you may need this for find-orientations")
         detector = None
 
     return pd, reader, detector
+
 
 def get_instrument_parameters(cfg):
     # TODO: this needs to be
@@ -201,7 +204,7 @@ def get_instrument_parameters(cfg):
     with open(cfg.instrument.parameters, 'r') as f:
         # only one panel for now
         # TODO: configurize this
-        return [cfg for cfg in yaml.load_all(f)][0]
+        return [item for item in yaml.load_all(f)][0]
 
 
 def get_detector_parameters(instr_cfg):
@@ -227,11 +230,11 @@ def get_saturation_level(instr_cfg):
     return instr_cfg['detector']['saturation_level']
 
 
-def set_planedata_exclusions(cfg, detector, pd):
+def set_planedata_exclusions(cfg, pd):
     tth_max = cfg.fit_grains.tth_max
     if tth_max is True:
         pd.exclusions = np.zeros_like(pd.exclusions, dtype=bool)
-        pd.exclusions = pd.getTTh() > detector.getTThMax()
+        pd.exclusions = pd.getTTh() > cfg.instrument.hedm.max_tth()
     elif tth_max > 0:
         pd.exclusions = np.zeros_like(pd.exclusions, dtype=bool)
         pd.exclusions = pd.getTTh() >= np.radians(tth_max)

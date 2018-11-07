@@ -45,10 +45,12 @@ class Instrument(Config):
         rows = dcfg.get('pixels:rows', default=Detector.nrows_DFLT)
         cols = dcfg.get('pixels:columns', default=Detector.ncols_DFLT)
         pixel_size = dcfg.get('pixels:size', default=Detector.pixel_size_DFLT)
+        saturation_level = dcfg.get('saturation_level', default=Detector.saturation_level_DFLT)
         tvec = dcfg.get('transform:t_vec_d', default=Detector.t_vec_d_DFLT)
         tilt = dcfg.get('transform:tilt_angles', default=Detector.tilt_angles_DFLT)
         bvec = self.beam.vector
         evec = self._cfg.get('eta_vec', default=constants.eta_vec)
+
 
         # Distortion
         # FIXME: DISTORTION KLUDGE
@@ -57,7 +59,8 @@ class Instrument(Config):
 
         d = instrument.PlanarDetector(
             rows=rows, cols=cols, pixel_size=pixel_size, tvec=tvec, tilt=tilt,
-            bvec=bvec, evec=evec, distortion=distortion)
+            bvec=bvec, evec=evec, saturation_level=saturation_level,
+            distortion=distortion)
 
         return d
 
@@ -68,6 +71,7 @@ class Detector(Config):
     nrows_DFLT = 2048
     ncols_DFLT = 2048
     pixel_size_DFLT = (0.2, 0.2)
+    saturation_level_DFLT = 2**16
 
     tilt_angles_DFLT = np.zeros(3)
     t_vec_d_DFLT = np.r_[0., 0., -1000.]

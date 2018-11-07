@@ -4,7 +4,7 @@ from __future__ import print_function
 import numpy as np
 
 from hexrd import constants
-from hexrd import matrixutil as mutil
+from hexrd.xrd.transforms_CAPI import unitRowVector
 
 class Beam(object):
 
@@ -16,13 +16,32 @@ class Beam(object):
     def energy(self):
         return self._energy
 
+    @energy.setter
+    def energy(self, x):
+        """
+        assumes input float in keV
+        """
+        self._energy = float(x)
+        
     @property
     def vector(self):
         return self._vector
 
+    @vector.setter
+    def vector(self, x):
+        assert len(x) == 3
+        self._vector = unitRowVector(np.atleast_1d(x).flatten())
+
     @property
     def wavelength(self):
         return constants.keVToAngstrom(self.energy)
+
+    @wavelength.setter
+    def wavelength(self, x):
+        """
+        in angstrom
+        """
+        self._energy = constants.keVToAngstrom(x)
 
 
 def calc_beam_vec(azim, pola):
@@ -46,8 +65,8 @@ def calc_angles_from_beam_vec(bvec):
     Return the azimuth and polar angle from a beam
     vector
     """
-    bvec = np.atleast_2d(bvec).reshape(3, 1)
-    nvec = mutil.unitVector(-bvec)
+    bvec = np.atleast_1d(bvec).flatten()
+    nvec = unitRowVector(-bvec)
     azim = float(
         np.degrees(np.arctan2(nvec[2], nvec[0]))
     )

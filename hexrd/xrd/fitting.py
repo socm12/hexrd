@@ -448,21 +448,31 @@ def objFuncFitGrain(gFit, gFull, gFlag,
             continue
 
         """
-        extract data from results list
-        fields:
+        extract data from results list fields:
           refl_id, gvec_id, hkl, sum_int, max_int, pred_ang, meas_ang, meas_xy
+
+        or array from spots tables:
+          0:5    ID    PID    H    K    L       
+          5:7    sum(int)    max(int)      
+          7:10   pred tth    pred eta    pred ome                 
+          10:13  meas tth    meas eta    meas ome                 
+          13:15  pred X    pred Y                   
+          15:17  meas X    meas Y                 
         """
-
-        # WARNING: hkls and derived vectors below must be columnwise;
-        # strictly necessary??? change affected APIs instead?
-        # <JVB 2017-03-26>
-        hkls = np.atleast_2d(
-            np.vstack([x[2] for x in results])
-        ).T
-
-        meas_xyo = np.atleast_2d(
-            np.vstack([np.r_[x[7], x[6][-1]] for x in results])
-        )
+        if isinstance(results, list):
+            # WARNING: hkls and derived vectors below must be columnwise;
+            # strictly necessary??? change affected APIs instead?
+            # <JVB 2017-03-26>
+            hkls = np.atleast_2d(
+                np.vstack([x[2] for x in results])
+            ).T
+            
+            meas_xyo = np.atleast_2d(
+                np.vstack([np.r_[x[7], x[6][-1]] for x in results])
+            )
+        elif isinstance(results, np.ndarray):
+            hkls = np.atleast_2d(results[:, 2:5]).T
+            meas_xyo = np.atleast_2d(results[:, [15, 16, 12]])
 
         # FIXME: distortion handling must change to class-based
         if panel.distortion is not None:

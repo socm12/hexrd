@@ -12,12 +12,12 @@ from hexrd.xrd.transforms_CAPI import anglesToGVec, \
                                       detectorXYToGvec, \
                                       gvecToDetectorXY, \
                                       makeDetectorRotMat, \
-                                      makeOscillRotMat, \
                                       makeRotMatOfExpMap, \
                                       mapAngle, \
                                       oscillAnglesOfHKLs, \
-                                      rowNorm, \
-                                      validateAngleRanges
+                                      rowNorm
+from skimage.draw import polygon
+
 
 class PlanarDetector(object):
     """
@@ -244,8 +244,7 @@ class PlanarDetector(object):
     @distortion.setter
     def distortion(self, x):
         """
-        Probably should make distortion a class...
-        ***FIX THIS***
+        FIXME: Probably should make distortion a class...
         """
         assert len(x) == 2 and hasattr(x[0], '__call__'), \
             'distortion must be a tuple: (<func>, params)'

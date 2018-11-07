@@ -45,7 +45,7 @@ def execute(args, parser):
     import yaml
 
     from hexrd import config
-    from hexrd.fitgrains import fit_grains
+    from hexrd.actions.fit_grains import fit_grains
 
 
     # load the configuration settings

@@ -97,6 +97,7 @@ class OmegaConfig(Config):
 
     @property
     def period(self):
+        # ??? maybe should get from image_series like before in v0.3.x
         key = 'find_orientations:omega:period'
         temp = self._cfg.get(key, [-180., 180])
         range = np.abs(temp[1]-temp[0])
