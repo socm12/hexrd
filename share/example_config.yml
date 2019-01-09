@@ -1,42 +1,38 @@
-analysis_name: RUBY_SWEEP_0 # defaults to analysis
+analysis_name: Ruby1_hydra # defaults to analysis
 
 ## working directory defaults to current working directory
 ## all relative paths specified herein are assumed to be in the working_dir
 ## any files not in working_dir should be specified with an absolute path
 #working_dir:
 
-multiprocessing: 1 # "all", or "half", or -1 means all but one, defaults to -1
+multiprocessing: all # "all", or "half", or -1 means all but one, defaults to -1
 
 material:
-  definitions: materials.cpl
+  definitions: materials.hexrd
   active: ruby
 
 image_series:
-  file:
-    stem: raw_data/RUBY_%04d # can include relative or absolute path
-    ids: [4537, 4538] # or can use globs: ["*2[4-9]"]
-  images:
-    start: 2
-  omega:
-    start: -60.0
-    step: 0.25
-    stop: 60.0
-  dark: RUBY_4537_medianDark
-  flip: v # ~, v, h, hv, vh, cw, ccw
+  format: frame-cache
+  data:
+    - file: ./imageseries/Ruby1_hydra_000000-fc_GE1.npz
+      args: {}
+      panel: GE1
+    - file: ./imageseries/Ruby1_hydra_000000-fc_GE2.npz
+      args: {}
+      panel: GE2
+    - file: ./imageseries/Ruby1_hydra_000000-fc_GE3.npz
+      args: {}
+      panel: GE3
+    - file: ./imageseries/Ruby1_hydra_000000-fc_GE4.npz
+      args: {}
+      panel: GE4
 
-instrument:
-  parameters: example_calibration.yml
-  detector: # this section is only needed to convert old files to the new spec
-    parameters_old: ge_ceo2.par # the old detector spec, produced by the GUI
-    pixels: # this section required to convert from old detector spec
-      rows: 2048
-      columns: 2048
-      size: [0.200, 0.200] # [row height, col width] mm
+instrument:  example_instrument.yml
 
 find_orientations:
   orientation_maps:
     # A file name must be specified. If it doesn't exist, one will be created
-    file: RUBY_4537-4538_t15_eta-omega.cpl
+    # file: Ruby1_hydra_t15_eta-omega.npz
 
     threshold: 15
     bin_frames: 1 # defaults to 1
@@ -58,9 +54,7 @@ find_orientations:
     tolerance: 1.0 # in degrees, defaults to 2x ome step
 
     ## specify the branch cut, in degrees. The range must be 360 degrees.
-    ## defaults to ["image_series:omega:start", "image_series:omega:start"+-360]
-    ## depending on sign of "image_series:omega:step"
-    #period: [-180, 180] # in degrees, defaults to full 360 starting at "ome start"
+    #period: [0, 360] # in degrees, defaults to full 360 starting at "ome start"
 
   eta:
     tolerance: 1.0 # in degrees, defaults to 2x ome step
@@ -68,40 +62,25 @@ find_orientations:
 
   clustering:
     radius: 1.0
-    completeness: 0.51 # completeness threshold
+    completeness: 0.85 # completeness threshold
     #algorithm: fclusterdata # defaults to dbscan
 
 fit_grains:
   do_fit: true # if false, extracts grains but doesn't fit. defaults to true
 
-  estimate: RUBY_SWEEP_0/grains.out # defaults to None
+  estimate: Ruby1_hydra/grains.out
 
   npdiv: 2 # number of polar pixel grid subdivisions, defaults to 2
 
-  panel_buffer: 10 # don't fit spots within this many pixels from edge
+  panel_buffer: 10 # don't fit spots within this many mm from edge
 
-  threshold: 25
+  threshold: 10
 
   tolerance:
-    tth: [0.25, 0.086] # tolerance lists must be identical length
-    eta: [2.0, 0.75]
-    omega: [1.0, 0.25]
+    tth: [0.25, 0.20, 0.15] # tolerance lists must be identical length
+    eta: [2.0, 2.0, 1.0]
+    omega: [2.0, 2.0, 1.0]
 
-  tth_max: 14.75 # true, false, or a non-negative value, defaults to true
+  refit: [1, 1]
 
----
-
-analysis_name: RUBY_SWEEP_1 # defaults to analysis
-
-image_series:
-  file:
-    ids: [4539, 4540] # or can use globs: ["*2[4-9]"]
-
----
-
-analysis_name: RUBY_SWEEP_2 # defaults to analysis
-
-image_series:
-  file:
-    ids: [4541, 4542] # or can use globs: ["*2[4-9]"]
-
+  tth_max: 15. # true, false, or a non-negative value, defaults to true

@@ -189,9 +189,11 @@ class OrientationMapsConfig(Config):
 
     @property
     def file(self):
-        temp = self._cfg.get('find_orientations:orientation_maps:file')
-        if not os.path.isabs(temp):
-            temp = os.path.join(self._cfg.working_dir, temp)
+        temp = self._cfg.get('find_orientations:orientation_maps:file',
+                             default=None)
+        if temp is not None:
+            if not os.path.isabs(temp):
+                temp = os.path.join(self._cfg.working_dir, temp)
         return temp
 
     @property

@@ -46,8 +46,8 @@ class Instrument(Config):
         cols = dcfg.get('pixels:columns', default=Detector.ncols_DFLT)
         pixel_size = dcfg.get('pixels:size', default=Detector.pixel_size_DFLT)
         saturation_level = dcfg.get('saturation_level', default=Detector.saturation_level_DFLT)
-        tvec = dcfg.get('transform:t_vec_d', default=Detector.t_vec_d_DFLT)
-        tilt = dcfg.get('transform:tilt_angles', default=Detector.tilt_angles_DFLT)
+        tvec = dcfg.get('transform:translation', default=Detector.t_vec_d_DFLT)
+        tilt = dcfg.get('transform:tilt', default=Detector.tilt_DFLT)
         bvec = self.beam.vector
         evec = self._cfg.get('eta_vec', default=constants.eta_vec)
 
@@ -73,7 +73,7 @@ class Detector(Config):
     pixel_size_DFLT = (0.2, 0.2)
     saturation_level_DFLT = 2**16
 
-    tilt_angles_DFLT = np.zeros(3)
+    tilt_DFLT = np.zeros(3)
     t_vec_d_DFLT = np.r_[0., 0., -1000.]
 
     def __init__(self, cfg, id):
@@ -124,7 +124,7 @@ class OscillationStage(Config):
 
     @property
     def tvec(self):
-        return self.get('t_vec_s', default=self.tvec_DFLT)
+        return self.get('translation', default=self.tvec_DFLT)
 
     @property
     def chi(self):

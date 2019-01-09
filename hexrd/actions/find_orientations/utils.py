@@ -44,16 +44,6 @@ def analysis_id(cfg):
 
 def get_eta_ome(cfg, clean=False):
     """Return eta-omega maps"""
-    # Use existing ones if available
-    maps_fname = analysis_id(cfg) + "_maps.npz"
-    if os.path.exists(maps_fname) and not clean:
-        print("INFO: loading existing eta_ome maps")
-        eta_ome = EtaOmeMaps(maps_fname)
-        return eta_ome
-
-    print("INFO: building eta_ome maps")
-    start = timeit.default_timer()
-
     # make eta_ome maps
     imsd = cfg.image_series
     instr = cfg.instrument.hedm
@@ -61,6 +51,22 @@ def get_eta_ome(cfg, clean=False):
     active_hkls = cfg.find_orientations.orientation_maps.active_hkls
     build_map_threshold = cfg.find_orientations.orientation_maps.threshold
     ome_period = np.radians(cfg.find_orientations.omega.period)
+
+    # Use existing ones if available
+    maps_fname = cfg.find_orientations.orientation_maps.file
+    if maps_fname is None:
+        maps_fname = "_".join(
+            [analysis_id(cfg),
+             "t" + str(build_map_threshold),
+             "maps.npz"]
+        )
+    if os.path.exists(maps_fname) and not clean:
+        print("INFO: loading existing eta_ome maps")
+        eta_ome = EtaOmeMaps(maps_fname)
+        return eta_ome
+
+    print("INFO: building eta_ome maps")
+    start = timeit.default_timer()
 
     # trim plane_data to only use active hkls
     if active_hkls is not None:

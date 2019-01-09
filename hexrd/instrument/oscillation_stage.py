@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import numpy as np
-from hexrd.xrd.transforms_CAPI import unitRowVector
 
 class OscillationStage(object):
 
@@ -25,4 +24,4 @@ class OscillationStage(object):
     @tvec.setter
     def tvec(self, x):
         assert len(x) == 3
-        self._tvec = unitRowVector(np.atleast_1d(x).flatten())
+        self._tvec = np.atleast_1d(x).flatten()

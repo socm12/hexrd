@@ -49,7 +49,6 @@ from hexrd.valunits import valWUnit
 from hexrd.xrd.transforms_CAPI import anglesToGVec, \
                                       detectorXYToGvec, \
                                       gvecToDetectorXY, \
-                                      makeDetectorRotMat, \
                                       makeOscillRotMat, \
                                       makeRotMatOfExpMap, \
                                       mapAngle, \
@@ -81,7 +80,7 @@ nrows_DFLT = 2048
 ncols_DFLT = 2048
 pixel_size_DFLT = (0.2, 0.2)
 
-tilt_angles_DFLT = np.zeros(3)
+tilt_DFLT = np.zeros(3)
 t_vec_d_DFLT = np.r_[0., 0., -1000.]
 
 chi_DFLT = 0.
@@ -199,7 +198,7 @@ class HEDMInstrument(object):
                     rows=nrows_DFLT, cols=ncols_DFLT,
                     pixel_size=pixel_size_DFLT,
                     tvec=t_vec_d_DFLT,
-                    tilt=tilt_angles_DFLT,
+                    tilt=tilt_DFLT,
                     bvec=self._beam_vector,
                     evec=self._eta_vector,
                     distortion=None),
@@ -240,8 +239,8 @@ class HEDMInstrument(object):
                     PlanarDetector(
                         rows=pix['rows'], cols=pix['columns'],
                         pixel_size=pix['size'],
-                        tvec=xform['t_vec_d'],
-                        tilt=xform['tilt_angles'],
+                        tvec=xform['translation'],
+                        tilt=xform['tilt'],
                         bvec=self._beam_vector,
                         evec=ct.eta_vec,
                         distortion=dist_list)
@@ -1268,7 +1267,7 @@ class PlanarDetector(object):
 
     @property
     def rmat(self):
-        return makeDetectorRotMat(self.tilt)
+        return makeRotMatOfExpMap(self.tilt)
 
     @property
     def normal(self):
@@ -1329,8 +1328,8 @@ class PlanarDetector(object):
         d = dict(
             detector=dict(
                 transform=dict(
-                    tilt_angles=self.tilt.tolist(),
-                    t_vec_d=self.tvec.tolist(),
+                    tilt=self.tilt.tolist(),
+                    translation=self.tvec.tolist(),
                 ),
                 pixels=dict(
                     rows=self.rows,

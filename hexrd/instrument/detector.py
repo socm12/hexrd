@@ -11,7 +11,6 @@ from hexrd.xrd.crystallography import PlaneData
 from hexrd.xrd.transforms_CAPI import anglesToGVec, \
                                       detectorXYToGvec, \
                                       gvecToDetectorXY, \
-                                      makeDetectorRotMat, \
                                       makeRotMatOfExpMap, \
                                       mapAngle, \
                                       oscillAnglesOfHKLs, \
@@ -252,7 +251,7 @@ class PlanarDetector(object):
 
     @property
     def rmat(self):
-        return makeDetectorRotMat(self.tilt)
+        return makeRotMatOfExpMap(self.tilt)
 
     @property
     def normal(self):
@@ -313,8 +312,8 @@ class PlanarDetector(object):
         d = dict(
             detector=dict(
                 transform=dict(
-                    tilt_angles=self.tilt.tolist(),
-                    t_vec_d=self.tvec.tolist(),
+                    tilt=self.tilt.tolist(),
+                    translation=self.tvec.tolist(),
                 ),
                 pixels=dict(
                     rows=self.rows,
@@ -324,7 +323,7 @@ class PlanarDetector(object):
             ),
             oscillation_stage=dict(
                 chi=chi,
-                t_vec_s=t_vec_s.tolist(),
+                translation=t_vec_s.tolist(),
             ),
         )
 

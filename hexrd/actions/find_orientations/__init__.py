@@ -38,24 +38,26 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     min_compl = cfg.find_orientations.clustering.completeness
     compl_thresh = cfg.find_orientations.clustering.completeness
 
+    eta_ome = get_eta_ome(cfg, clean=clean)
+
     print("INFO:\tgenerating search quaternion list using %d processes" % ncpus)
     start = timeit.default_timer()
-
-    eta_ome = get_eta_ome(cfg, clean=clean)
     qfib = generate_orientation_fibers(
         eta_ome, hedm.chi, on_map_threshold,
         fiber_seeds, fiber_ndiv,
         ncpus=ncpus
     )
+    print("INFO:\t\t...took %f seconds" % (timeit.default_timer() - start))
+    print("INFO: will test %d quaternions using %d processes"
+          % (qfib.shape[1], ncpus))
 
     # %%
     # =============================================================================
     # ORIENTATION SCORING
     # =============================================================================
 
-    print("INFO:\t\t...took %f seconds" % (timeit.default_timer() - start))
-    print("INFO: will test %d quaternions using %d processes"
-          % (qfib.shape[1], ncpus))
+    scoredq_filename = 'scored_orientations_' + analysis_id(cfg) + '.npz'
+
     print("INFO:\tusing map search with paintGrid on %d processes"
           % ncpus)
     start = timeit.default_timer()
@@ -74,6 +76,13 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     print("INFO:\t\t...took %f seconds" % (timeit.default_timer() - start))
     completeness = np.array(completeness)
 
+    # export scored orientations
+    np.savez_compressed(scoredq_filename,
+                        quaternions=qfib,
+                        completeness=completeness)
+    print("INFO:\tsaved scored orientations to file: '%s'"
+          % (scoredq_filename))
+    
     # %%
     # =============================================================================
     # CLUSTERING AND GRAINS OUTPUT
@@ -88,9 +97,7 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     )
     start = timeit.default_timer()
 
-    ##########################################################
-    ##   Simulate N random grains to get neighborhood size  ##
-    ##########################################################
+    # Simulate N random grains to get neighborhood size
     print("INFO:\trunning %d simulations to determine neighborhood size"
           % nsim
     )
@@ -101,7 +108,9 @@ def find_orientations(cfg, hkls=None, clean=False, profile=False, nsim=100):
     # need ome_ranges from imageseries
     # CAVEAT: assumes that all imageseries have same omega ranges!!!
     oims = OmegaImageSeries(cfg.image_series.itervalues().next())
-    ome_ranges = [(np.radians([i['ostart'], i['ostop']])) for i in oims.omegawedges.wedges]
+    ome_ranges = [
+        (np.radians([i['ostart'], i['ostop']])) for i in oims.omegawedges.wedges
+    ]
     
     if seed_hkl_ids is not None:
         rand_q = mutil.unitVector(np.random.randn(4, nsim))
